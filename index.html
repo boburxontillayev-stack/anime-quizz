@@ -1,310 +1,309 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Anime Quiz</title>
-
-<style>
-
-body{
-margin:0;
-font-family:Arial;
-color:white;
-text-align:center;
-
-background-image:url("https://wallpapercave.com/wp/wp5128415.jpg");
-background-size:cover;
-background-position:center;
-background-attachment:fixed;
-}
-
-.overlay{
-background:rgba(0,0,0,0.65);
-min-height:100vh;
-padding:40px;
-}
-
-h1{
-color:#ff4500;
-font-size:40px;
-}
-
-button{
-padding:12px 20px;
-margin:10px;
-font-size:16px;
-border:none;
-border-radius:8px;
-cursor:pointer;
-}
-
-.option{
-display:block;
-margin:10px auto;
-width:220px;
-background:white;
-color:black;
-}
-
-.correct{
-background:#2ecc71 !important;
-color:white;
-}
-
-.wrong{
-background:#e74c3c !important;
-color:white;
-}
-
-#quizArea{
-display:none;
-}
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Quiz</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            text-align: center;
+            background-image: url("https://wallpapercave.com/wp/wp5128415.jpg");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .overlay {
+            background: rgba(0, 0, 0, 0.7);
+            min-height: 100vh;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #ff4500;
+            font-size: 45px;
+            text-shadow: 2px 2px 10px black;
+        }
+        button {
+            padding: 12px 25px;
+            margin: 10px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        #startBtn {
+            background: #ff4500;
+            color: white;
+            font-weight: bold;
+        }
+        .option {
+            display: block;
+            margin: 10px auto;
+            width: 280px;
+            background: white;
+            color: black;
+            font-weight: 600;
+        }
+        .option:hover {
+            background: #ddd;
+        }
+        .correct {
+            background: #2ecc71 !important;
+            color: white !important;
+        }
+        .wrong {
+            background: #e74c3c !important;
+            color: white !important;
+        }
+        #quizArea {
+            display: none;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 500px;
+            margin: 20px auto;
+            backdrop-filter: blur(5px);
+        }
+        #score {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #ffd700;
+        }
+    </style>
 </head>
-
 <body>
 
 <div class="overlay">
+    <h1>Anime Quiz</h1>
+    <button id="startBtn" onclick="initAndStart()">Quiz boshlash</button>
 
-<h1>Anime Quiz</h1>
-
-<button onclick="startQuiz()">Quiz boshlash</button>
-
-<div id="quizArea">
-
-<h2 id="question"></h2>
-
-<div id="options"></div>
-
-<div id="score"></div>
-
+    <div id="quizArea">
+        <h2 id="question"></h2>
+        <div id="options"></div>
+        <div id="score"></div>
+    </div>
 </div>
-
-</div>
-
 
 <audio id="bgMusic" loop>
-<source src="https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3" type="audio/mpeg">
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" type="audio/mpeg">
 </audio>
-
-<audio id="correctSound">
-<source src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3" type="audio/mpeg">
-</audio>
-
-<audio id="wrongSound">
-<source src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3" type="audio/mpeg">
-</audio>
-
-<audio id="finishSound">
-<source src="https://assets.mixkit.co/sfx/preview/mixkit-video-game-win-2016.mp3" type="audio/mpeg">
-</audio>
-
 
 <script>
+// --- OVOZ GENERATORI (ISHONCHLI USUL) ---
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+
+function playTone(freq, type, duration, volume = 0.1) {
+    if(!audioCtx) audioCtx = new AudioContext();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    
+    gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + duration);
+}
+
+function playCorrectSound() {
+    playTone(523.25, 'sine', 0.2); // Do nota
+    setTimeout(() => playTone(659.25, 'sine', 0.4), 100); // Mi nota
+}
+
+function playWrongSound() {
+    playTone(200, 'sawtooth', 0.3, 0.05); 
+    setTimeout(() => playTone(150, 'sawtooth', 0.4, 0.05), 150);
+}
+
+function playFinishSound() {
+    playTone(523, 'sine', 0.2);
+    setTimeout(() => playTone(659, 'sine', 0.2), 150);
+    setTimeout(() => playTone(784, 'sine', 0.5), 300);
+}
+// ----------------------------------------
 
 let allQuestions = [
-{ text:"Naruto qaysi kuch bilan mashhur?", options:["Sharingan","Byakugan","Chakra","Rinnegan"], answer:"Chakra"},
-{ text:"One Piece qahramoni kim?", options:["Naruto","Luffy","Goku","Ichigo"], answer:"Luffy"},
-{ text:"Dragon Ball Z bosh qahramoni kim?", options:["Naruto","Luffy","Goku","Ichigo"], answer:"Goku"},
-{ text:"Death Note-da Light qahramon?", options:["Light Yagami","L Lawliet","Ryuk","Misa"], answer:"Light Yagami"},
-{ text:"My Hero Academia bosh qahramoni kim?", options:["Izuku Midoriya","Bakugo","All Might","Shigaraki"], answer:"Izuku Midoriya"},
-{ text:"Sailor Moon bosh qahramoni kim?", options:["Usagi Tsukino","Ami Mizuno","Rei Hino","Makoto Kino"], answer:"Usagi Tsukino"},
-{ text:"Fullmetal Alchemist bosh qahramonlari kimlar?", options:["Edward & Alphonse","Roy & Riza","Ling & Lan Fan","Scar & Winry"], answer:"Edward & Alphonse"},
-{ text:"Bleach bosh qahramoni kim?", options:["Ichigo Kurosaki","Rukia Kuchiki","Renji Abarai","Uryu Ishida"], answer:"Ichigo Kurosaki"},
-{ text:"Tokyo Ghoul bosh qahramoni kim?", options:["Kaneki Ken","Touka Kirishima","Hideyoshi Nagachika","Amon Koutarou"], answer:"Kaneki Ken"},
-{ text:"Naruto qaysi jutsu bilan mashhur?", options:["Rasengan","Chidori","Kamehameha","Getsuga Tensho"], answer:"Rasengan"},
-{ text:"One Piece-da qaysi kema bor?", options:["Going Merry","Thousand Sunny","Black Pearl","Nausicaa"], answer:"Going Merry"},
-{ text:"Dragon Ball-da qaysi kuchli transformatsiya mavjud?", options:["Super Saiyan","Bankai","Titan Form","Full Power"], answer:"Super Saiyan"},
-{ text:"Bleach-da Soul Reaper qahramonlar kimlar?", options:["Ichigo","Rukia","Renji","Hammasi to‘g‘ri"], answer:"Hammasi to‘g‘ri"},
-{ text:"Attack on Titan bosh yirtqichlari nima deb ataladi?", options:["Titanlar","Shinigami","Hollows","Ghouls"], answer:"Titanlar"},
-{ text:"Death Note-da qaysi ruh yordam beradi?", options:["Ryuk","Rem","Shinigami","Hammasi"], answer:"Ryuk"},
-{ text:"My Hero Academia-da All Might haqiqiy ism?", options:["Toshinori Yagi","Izuku Midoriya","Katsuki Bakugo","Shoto Todoroki"], answer:"Toshinori Yagi"},
-{ text:"Sailor Moon-da Tuxedo Mask haqiqiy ism?", options:["Mamoru Chiba","Tuxedo Mask","Usagi","Seiya"], answer:"Mamoru Chiba"},
-{ text:"Fullmetal Alchemist-da FMA qisqartmasi nimani anglatadi?", options:["Fullmetal Alchemist","Fairy Magic Academy","Final Master Alchemy","Fusion Magic Art"], answer:"Fullmetal Alchemist"},
-{ text:"Tokyo Ghoul bosh qahramoni Kaneki qanday transformatsiya qilinadi?", options:["Half Ghoul","Full Ghoul","Half Human","Titan"], answer:"Half Ghoul"},
-{ text:"Naruto-da Hokage kim bo‘ldi?", options:["Naruto","Sasuke","Kakashi","Sakura"], answer:"Naruto"},
-{ text:"One Piece-da Davy Back Fight kimlar o‘ynaydi?", options:["Straw Hats vs Foxy","Straw Hats vs Marines","Luffy vs Zoro","Nami vs Robin"], answer:"Straw Hats vs Foxy"},
-{ text:"Dragon Ball-da Vegeta qaysi jinsga tegishli?", options:["Saiyan","Human","Namekian","Android"], answer:"Saiyan"},
-{ text:"Bleach-da Bankai nima?", options:["Quvvat transformatsiyasi","Jutsu","Shinigami artefakti","Hollow quroli"], answer:"Quvvat transformatsiyasi"},
-{ text:"Attack on Titan bosh qahramoni kim?", options:["Eren","Mikasa","Armin","Levi"], answer:"Eren"},
-{ text:"My Hero Academia-da Bakugo qudrati nima?", options:["Explosion","Flight","Telepathy","Invisibility"], answer:"Explosion"},
-{ text:"Naruto-da Uchiha klanining kuchi nima?", options:["Sharingan","Byakugan","Rinnegan","Chakra"], answer:"Sharingan"},
-{ text:"One Piece-da Sanji nima bilan mashhur?", options:["Cooking","Fighting","Navigation","Music"], answer:"Cooking"},
-{ text:"Dragon Ball-da Goku qanday transformatsiya qiladi?", options:["Super Saiyan","Kaioken","Fusion","Ultra Instinct"], answer:"Super Saiyan"},
-{ text:"Bleach-da Ichigo qaysi turga kiradi?", options:["Soul Reaper","Hollow","Human","Vizard"], answer:"Soul Reaper"},
-{ text:"Attack on Titan-da Mikasa qahramonligi nima?", options:["Eren-ni himoya qilish","Yirtqichlarni yo‘q qilish","Siyosiy yetakchilik","Qurol ishlatish"], answer:"Eren-ni himoya qilish"},
-{ text:"Fullmetal Alchemist-da Edward qanday olti qadamlar qiladi?", options:["Alchemy","Transmutation","Fighting","Science"], answer:"Alchemy"},
-{ text:"Sailor Moon-da Luna nima?", options:["Mushuk","Kuchli jin","Insonga o‘xshash","Robot"], answer:"Mushuk"},
-{ text:"Naruto-da Sasuke qaysi klanga tegishli?", options:["Uchiha","Senju","Hyuga","Akimichi"], answer:"Uchiha"},
-{ text:"One Piece-da Nami qaysi ro‘lni bajaradi?", options:["Navigator","Cook","Fighter","Doctor"], answer:"Navigator"},
-{ text:"Dragon Ball Z-da Frieza qaysi sayyoralik?", options:["Frieza","Saiyan","Namekian","Human"], answer:"Frieza"},
-{ text:"Bleach-da Rukia kim bilan do‘st?", options:["Ichigo","Renji","Uryu","Orihime"], answer:"Ichigo"},
-{ text:"My Hero Academia-da Todoroki qudrati nima?", options:["Ice & Fire","Flight","Explosion","Telepathy"], answer:"Ice & Fire"},
-{ text:"Attack on Titan-da Levi qahramoni kim?", options:["Levi Ackerman","Eren Yeager","Armin Arlert","Jean Kirschtein"], answer:"Levi Ackerman"},
-{ text:"Dragon Ball-da Trunks kimning farzandi?", options:["Vegeta & Bulma","Goku & Chi-Chi","Piccolo & Kami","Krillin & Android 18"], answer:"Vegeta & Bulma"},
-{ text:"Naruto-da Hinata qudrati nima?", options:["Byakugan","Sharingan","Rinnegan","Chakra"], answer:"Byakugan"},
-{ text:"One Piece-da Chopper qaysi jonivor?", options:["Renna","Kangaroo","Reindeer","Dog"], answer:"Reindeer"},
-{ text:"Sailor Moon-da Ami qaysi kuchga ega?", options:["Mercury","Moon","Mars","Jupiter"], answer:"Mercury"},
-{ text:"Tokyo Ghoul-da Touka qahramoni kim?", options:["Touka Kirishima","Rize Kamishiro","Kaneki Ken","Hide"], answer:"Touka Kirishima"},
-{ text:"Bleach-da Uryu qaysi turga kiradi?", options:["Quincy","Shinigami","Hollow","Human"], answer:"Quincy"},
-{ text:"Dragon Ball-da Gohan kimning o‘g‘li?", options:["Goku","Vegeta","Piccolo","Krillin"], answer:"Goku"},
-{ text:"Naruto-da Kakashi qaysi hokage bo‘lgan?", options:["6","5","7","4"], answer:"6"},
-{ text:"One Piece-da Robin qaysi ro‘lni bajaradi?", options:["Archeologist","Cook","Fighter","Doctor"], answer:"Archeologist"},
-{ text:"Dragon Ball-da Cell kim?", options:["Android","Saiyan","Human","Namekian"], answer:"Android"},
-{ text:"Attack on Titan-da Armin qahramoni kim?", options:["Armin Arlert","Eren Yeager","Levi Ackerman","Jean Kirschtein"], answer:"Armin Arlert"},
-{ text:"Naruto-da Jiraiya kim?", options:["Sannin","Hokage","Kage","Sensei"], answer:"Sannin"},
-{ text:"My Hero Academia-da Midoriya qudrati nima?", options:["One For All","Flight","Explosion","Ice & Fire"], answer:"One For All"},
-{ text:"Sailor Moon-da Makoto qaysi kuchga ega?", options:["Jupiter","Moon","Mars","Venus"], answer:"Jupiter"},
-{ text:"One Piece-da Franky nima bilan mashhur?", options:["Shipbuilding","Fighting","Navigation","Cooking"], answer:"Shipbuilding"},
-{ text:"Dragon Ball-da Majin Buu kim?", options:["Villain","Hero","Sidekick","Android"], answer:"Villain"},
-{ text:"Bleach-da Ichigo-ning Bankai nomi nima?", options:["Tensa Zangetsu","Senbonzakura","Hyorinmaru","Zangetsu"], answer:"Tensa Zangetsu"},
-{ text:"Naruto-da Orochimaru qaysi jin?", options:["Snake","Dog","Cat","Bird"], answer:"Snake"},
-{ text:"Tokyo Ghoul-da Hide qahramoni kim?", options:["Hideyoshi Nagachika","Kaneki Ken","Touka Kirishima","Amon"], answer:"Hideyoshi Nagachika"},
-{ text:"Attack on Titan-da Titanlarning asosiy turi nima?", options:["Colossal","Armored","Beast","Female"], answer:"Colossal"},
-{ text:"Dragon Ball-da Vegeta qaysi transformatsiya qiladi?", options:["Super Saiyan","Kaioken","Fusion","Ultra Instinct"], answer:"Super Saiyan"},
-{ text:"One Piece-da Zoro quroli nima?", options:["Katana","Gun","Spear","Bow"], answer:"Katana"},
-{ text:"Bleach-da Renji kim?", options:["Shinigami","Hollow","Quincy","Human"], answer:"Shinigami"},
-{ text:"Naruto-da Gaara qaysi qishloqdan?", options:["Sunagakure","Konohagakure","Kirigakure","Iwagakure"], answer:"Sunagakure"},
-{ text:"Sailor Moon-da Rei qaysi kuchga ega?", options:["Mars","Moon","Mercury","Venus"], answer:"Mars"},
-{ text:"My Hero Academia-da All Might qudrati nima?", options:["One For All","Explosion","Flight","Ice & Fire"], answer:"One For All"},
-{ text:"Tokyo Ghoul-da Kaneki qaysi restoranda ishlaydi?", options:["Anteiku","Cafe de Tokyo","Ramen House","CCG"], answer:"Anteiku"},
-{ text:"Dragon Ball-da Piccolo qaysi jinsga tegishli?", options:["Namekian","Saiyan","Human","Android"], answer:"Namekian"},
-{ text:"Naruto-da Tsunade kim?", options:["Hokage","Sannin","Sensei","Kage"], answer:"Sannin"},
-{ text:"One Piece-da Brook qaysi jonivor?", options:["Skeleton","Human","Zombie","Cat"], answer:"Skeleton"},
-{ text:"Bleach-da Orihime qudrati nima?", options:["Healing","Flying","Fighting","Telepathy"], answer:"Healing"},
-{ text:"Attack on Titan-da Sasha qahramoni nima?", options:["Archer","Cook","Scout","Warrior"], answer:"Cook"},
-{ text:"Dragon Ball-da Krillin kimning do‘sti?", options:["Goku","Vegeta","Piccolo","Android 18"], answer:"Goku"},
-{ text:"Naruto-da Shikamaru qaysi klan?", options:["Nara","Uchiha","Senju","Hyuga"], answer:"Nara"},
-{ text:"One Piece-da Jinbe qaysi jinsga tegishli?", options:["Fishman","Human","Saiyan","Robot"], answer:"Fishman"},
-{ text:"My Hero Academia-da Iida qahramoni kim?", options:["Tenya Iida","Izuku Midoriya","Katsuki Bakugo","Shoto Todoroki"], answer:"Tenya Iida"},
-{ text:"Sailor Moon-da Venus qaysi kuchga ega?", options:["Venus","Moon","Mars","Jupiter"], answer:"Venus"},
-{ text:"Tokyo Ghoul-da Amon kim?", options:["CCG Inspector","Ghoul Hunter","Shinigami","Human"], answer:"CCG Inspector"},
-{ text:"Dragon Ball-da Android 18 qaysi turga tegishli?", options:["Android","Saiyan","Human","Namekian"], answer:"Android"},
-{ text:"Naruto-da Kiba qahramoni kim?", options:["Inuzuka Kiba","Uchiha Sasuke","Senju Naruto","Hyuga Neji"], answer:"Inuzuka Kiba"},
-{ text:"One Piece-da Luffy qaysi kuchga ega?", options:["Gum-Gum Fruit","Fire Fruit","Water Fruit","Ice Fruit"], answer:"Gum-Gum Fruit"},
-{ text:"Bleach-da Yoruichi kim?", options:["Shinigami","Hollow","Quincy","Human"], answer:"Shinigami"},
-{ text:"Attack on Titan-da Historia qahramoni kim?", options:["Historia Reiss","Mikasa","Sasha","Hange"], answer:"Historia Reiss"}
+    { text: "Naruto qaysi kuch bilan mashhur?", options: ["Sharingan", "Chakra", "Byakugan", "Rinnegan"], answer: "Chakra" },
+    { text: "One Piece qahramoni kim?", options: ["Naruto", "Goku", "Luffy", "Ichigo"], answer: "Luffy" },
+    { text: "Dragon Ball Z bosh qahramoni kim?", options: ["Goku", "Naruto", "Luffy", "Ichigo"], answer: "Goku" },
+    { text: "Death Note-da Light qahramon?", options: ["L Lawliet", "Ryuk", "Light Yagami", "Misa"], answer: "Light Yagami" },
+    { text: "My Hero Academia bosh qahramoni kim?", options: ["Izuku Midoriya", "Bakugo", "All Might", "Shigaraki"], answer: "Izuku Midoriya" },
+    { text: "Sailor Moon bosh qahramoni kim?", options: ["Ami Mizuno", "Usagi Tsukino", "Rei Hino", "Makoto Kino"], answer: "Usagi Tsukino" },
+    { text: "Fullmetal Alchemist bosh qahramonlari kimlar?", options: ["Roy & Riza", "Edward & Alphonse", "Ling & Lan Fan", "Scar & Winry"], answer: "Edward & Alphonse" },
+    { text: "Bleach bosh qahramoni kim?", options: ["Ichigo Kurosaki", "Rukia Kuchiki", "Renji Abarai", "Uryu Ishida"], answer: "Ichigo Kurosaki" },
+    { text: "Tokyo Ghoul bosh qahramoni kim?", options: ["Touka Kirishima", "Hideyoshi Nagachika", "Kaneki Ken", "Amon Koutarou"], answer: "Kaneki Ken" },
+    { text: "Naruto qaysi jutsu bilan mashhur?", options: ["Chidori", "Kamehameha", "Rasengan", "Getsuga Tensho"], answer: "Rasengan" },
+    { text: "One Piece-da qaysi kema bor?", options: ["Going Merry", "Thousand Sunny", "Black Pearl", "Nausicaa"], answer: "Going Merry" },
+    { text: "Dragon Ball-da qaysi kuchli transformatsiya mavjud?", options: ["Bankai", "Super Saiyan", "Titan Form", "Full Power"], answer: "Super Saiyan" },
+    { text: "Bleach-da Soul Reaper qahramonlar kimlar?", options: ["Ichigo", "Rukia", "Hammasi to‘g‘ri", "Renji"], answer: "Hammasi to‘g‘ri" },
+    { text: "Attack on Titan bosh yirtqichlari nima deb ataladi?", options: ["Shinigami", "Titanlar", "Hollows", "Ghouls"], answer: "Titanlar" },
+    { text: "Death Note-da qaysi ruh yordam beradi?", options: ["Rem", "Shinigami", "Ryuk", "Hammasi"], answer: "Ryuk" },
+    { text: "My Hero Academia-da All Might haqiqiy ism?", options: ["Toshinori Yagi", "Izuku Midoriya", "Katsuki Bakugo", "Shoto Todoroki"], answer: "Toshinori Yagi" },
+    { text: "Sailor Moon-da Tuxedo Mask haqiqiy ism?", options: ["Mamoru Chiba", "Tuxedo Mask", "Usagi", "Seiya"], answer: "Mamoru Chiba" },
+    { text: "Fullmetal Alchemist-da FMA qisqartmasi nimani anglatadi?", options: ["Fairy Magic Academy", "Fullmetal Alchemist", "Final Master Alchemy", "Fusion Magic Art"], answer: "Fullmetal Alchemist" },
+    { text: "Tokyo Ghoul bosh qahramoni Kaneki qanday transformatsiya qilinadi?", options: ["Full Ghoul", "Half Ghoul", "Half Human", "Titan"], answer: "Half Ghoul" },
+    { text: "Naruto-da Hokage kim bo‘ldi?", options: ["Sasuke", "Kakashi", "Sakura", "Naruto"], answer: "Naruto" },
+    { text: "One Piece-da Davy Back Fight kimlar o‘ynaydi?", options: ["Straw Hats vs Foxy", "Straw Hats vs Marines", "Luffy vs Zoro", "Nami vs Robin"], answer: "Straw Hats vs Foxy" },
+    { text: "Dragon Ball-da Vegeta qaysi jinsga tegishli?", options: ["Human", "Saiyan", "Namekian", "Android"], answer: "Saiyan" },
+    { text: "Bleach-da Bankai nima?", options: ["Quvvat transformatsiyasi", "Jutsu", "Shinigami artefakti", "Hollow quroli"], answer: "Quvvat transformatsiyasi" },
+    { text: "Attack on Titan bosh qahramoni kim?", options: ["Mikasa", "Eren", "Armin", "Levi"], answer: "Eren" },
+    { text: "My Hero Academia-da Bakugo qudrati nima?", options: ["Flight", "Explosion", "Telepathy", "Invisibility"], answer: "Explosion" },
+    { text: "Naruto-da Uchiha klanining kuchi nima?", options: ["Sharingan", "Byakugan", "Rinnegan", "Chakra"], answer: "Sharingan" },
+    { text: "One Piece-da Sanji nima bilan mashhur?", options: ["Fighting", "Navigation", "Cooking", "Music"], answer: "Cooking" },
+    { text: "Dragon Ball-da Goku qanday transformatsiya qiladi?", options: ["Super Saiyan", "Kaioken", "Fusion", "Ultra Instinct"], answer: "Super Saiyan" },
+    { text: "Bleach-da Ichigo qaysi turga kiradi?", options: ["Soul Reaper", "Hollow", "Human", "Vizard"], answer: "Soul Reaper" },
+    { text: "Attack on Titan-da Mikasa qahramonligi nima?", options: ["Yirtqichlarni yo‘q qilish", "Eren-ni himoya qilish", "Siyosiy yetakchilik", "Qurol ishlatish"], answer: "Eren-ni himoya qilish" },
+    { text: "Fullmetal Alchemist-da Edward qanday olti qadamlar qiladi?", options: ["Transmutation", "Alchemy", "Fighting", "Science"], answer: "Alchemy" },
+    { text: "Sailor Moon-da Luna nima?", options: ["Mushuk", "Kuchli jin", "Insonga o‘xshash", "Robot"], answer: "Mushuk" },
+    { text: "Naruto-da Sasuke qaysi klanga tegishli?", options: ["Senju", "Hyuga", "Uchiha", "Akimichi"], answer: "Uchiha" },
+    { text: "One Piece-da Nami qaysi ro‘lni bajaradi?", options: ["Cook", "Navigator", "Fighter", "Doctor"], answer: "Navigator" },
+    { text: "Dragon Ball Z-da Frieza qaysi sayyoralik?", options: ["Saiyan", "Namekian", "Frieza", "Human"], answer: "Frieza" },
+    { text: "Bleach-da Rukia kim bilan do‘st?", options: ["Ichigo", "Renji", "Uryu", "Orihime"], answer: "Ichigo" },
+    { text: "My Hero Academia-da Todoroki qudrati nima?", options: ["Ice & Fire", "Flight", "Explosion", "Telepathy"], answer: "Ice & Fire" },
+    { text: "Attack on Titan-da Levi qahramoni kim?", options: ["Levi Ackerman", "Eren Yeager", "Armin Arlert", "Jean Kirschtein"], answer: "Levi Ackerman" },
+    { text: "Dragon Ball-da Trunks kimning farzandi?", options: ["Goku & Chi-Chi", "Vegeta & Bulma", "Piccolo & Kami", "Krillin & Android 18"], answer: "Vegeta & Bulma" },
+    { text: "Naruto-da Hinata qudrati nima?", options: ["Sharingan", "Byakugan", "Rinnegan", "Chakra"], answer: "Byakugan" },
+    { text: "One Piece-da Chopper qaysi jonivor?", options: ["Renna", "Kangaroo", "Reindeer", "Dog"], answer: "Reindeer" },
+    { text: "Sailor Moon-da Ami qaysi kuchga ega?", options: ["Moon", "Mars", "Mercury", "Jupiter"], answer: "Mercury" },
+    { text: "Tokyo Ghoul-da Touka qahramoni kim?", options: ["Touka Kirishima", "Rize Kamishiro", "Kaneki Ken", "Hide"], answer: "Touka Kirishima" },
+    { text: "Bleach-da Uryu qaysi turga kiradi?", options: ["Shinigami", "Quincy", "Hollow", "Human"], answer: "Quincy" },
+    { text: "Dragon Ball-da Gohan kimning o‘g‘li?", options: ["Vegeta", "Goku", "Piccolo", "Krillin"], answer: "Goku" },
+    { text: "Naruto-da Kakashi qaysi hokage bo‘lgan?", options: ["5", "6", "7", "4"], answer: "6" },
+    { text: "One Piece-da Robin qaysi ro‘lni bajaradi?", options: ["Archeologist", "Cook", "Fighter", "Doctor"], answer: "Archeologist" },
+    { text: "Dragon Ball-da Cell kim?", options: ["Saiyan", "Human", "Android", "Namekian"], answer: "Android" },
+    { text: "Attack on Titan-da Armin qahramoni kim?", options: ["Armin Arlert", "Eren Yeager", "Levi Ackerman", "Jean Kirschtein"], answer: "Armin Arlert" },
+    { text: "Naruto-da Jiraiya kim?", options: ["Hokage", "Sannin", "Kage", "Sensei"], answer: "Sannin" },
+    { text: "My Hero Academia-da Midoriya qudrati nima?", options: ["Flight", "One For All", "Explosion", "Ice & Fire"], answer: "One For All" },
+    { text: "Sailor Moon-da Makoto qaysi kuchga ega?", options: ["Jupiter", "Moon", "Mars", "Venus"], answer: "Jupiter" },
+    { text: "One Piece-da Franky nima bilan mashhur?", options: ["Fighting", "Navigation", "Shipbuilding", "Cooking"], answer: "Shipbuilding" },
+    { text: "Dragon Ball-da Majin Buu kim?", options: ["Hero", "Villain", "Sidekick", "Android"], answer: "Villain" },
+    { text: "Bleach-da Ichigo-ning Bankai nomi nima?", options: ["Tensa Zangetsu", "Senbonzakura", "Hyorinmaru", "Zangetsu"], answer: "Tensa Zangetsu" },
+    { text: "Naruto-da Orochimaru qaysi jin?", options: ["Snake", "Dog", "Cat", "Bird"], answer: "Snake" },
+    { text: "Tokyo Ghoul-da Hide qahramoni kim?", options: ["Kaneki Ken", "Touka Kirishima", "Hideyoshi Nagachika", "Amon"], answer: "Hideyoshi Nagachika" },
+    { text: "Attack on Titan-da Titanlarning asosiy turi nima?", options: ["Colossal", "Armored", "Beast", "Female"], answer: "Colossal" },
+    { text: "Dragon Ball-da Vegeta qaysi transformatsiya qiladi?", options: ["Super Saiyan", "Kaioken", "Fusion", "Ultra Instinct"], answer: "Super Saiyan" },
+    { text: "One Piece-da Zoro quroli nima?", options: ["Gun", "Katana", "Spear", "Bow"], answer: "Katana" },
+    { text: "Bleach-da Renji kim?", options: ["Hollow", "Shinigami", "Quincy", "Human"], answer: "Shinigami" },
+    { text: "Naruto-da Gaara qaysi qishloqdan?", options: ["Sunagakure", "Konohagakure", "Kirigakure", "Iwagakure"], answer: "Sunagakure" },
+    { text: "Sailor Moon-da Rei qaysi kuchga ega?", options: ["Mars", "Moon", "Mercury", "Venus"], answer: "Mars" },
+    { text: "My Hero Academia-da All Might qudrati nima?", options: ["Explosion", "One For All", "Flight", "Ice & Fire"], answer: "One For All" },
+    { text: "Tokyo Ghoul-da Kaneki qaysi restoranda ishlaydi?", options: ["Cafe de Tokyo", "Ramen House", "Anteiku", "CCG"], answer: "Anteiku" },
+    { text: "Dragon Ball-da Piccolo qaysi jinsga tegishli?", options: ["Namekian", "Saiyan", "Human", "Android"], answer: "Namekian" },
+    { text: "Naruto-da Tsunade kim?", options: ["Hokage", "Sensei", "Sannin", "Kage"], answer: "Sannin" },
+    { text: "One Piece-da Brook qaysi jonivor?", options: ["Human", "Skeleton", "Zombie", "Cat"], answer: "Skeleton" },
+    { text: "Bleach-da Orihime qudrati nima?", options: ["Healing", "Flying", "Fighting", "Telepathy"], answer: "Healing" },
+    { text: "Attack on Titan-da Sasha qahramoni nima?", options: ["Archer", "Cook", "Scout", "Warrior"], answer: "Cook" },
+    { text: "Dragon Ball-da Krillin kimning do‘sti?", options: ["Vegeta", "Piccolo", "Goku", "Android 18"], answer: "Goku" },
+    { text: "Naruto-da Shikamaru qaysi klan?", options: ["Nara", "Uchiha", "Senju", "Hyuga"], answer: "Nara" },
+    { text: "One Piece-da Jinbe qaysi jinsga tegishli?", options: ["Fishman", "Human", "Saiyan", "Robot"], answer: "Fishman" },
+    { text: "My Hero Academia-da Iida qahramoni kim?", options: ["Izuku Midoriya", "Tenya Iida", "Katsuki Bakugo", "Shoto Todoroki"], answer: "Tenya Iida" },
+    { text: "Sailor Moon-da Venus qaysi kuchga ega?", options: ["Moon", "Venus", "Mars", "Jupiter"], answer: "Venus" },
+    { text: "Tokyo Ghoul-da Amon kim?", options: ["CCG Inspector", "Ghoul Hunter", "Shinigami", "Human"], answer: "CCG Inspector" },
+    { text: "Dragon Ball-da Android 18 qaysi turga tegishli?", options: ["Android", "Saiyan", "Human", "Namekian"], answer: "Android" },
+    { text: "Naruto-da Kiba qahramoni kim?", options: ["Uchiha Sasuke", "Senju Naruto", "Inuzuka Kiba", "Hyuga Neji"], answer: "Inuzuka Kiba" },
+    { text: "One Piece-da Luffy qaysi kuchga ega?", options: ["Fire Fruit", "Gum-Gum Fruit", "Water Fruit", "Ice Fruit"], answer: "Gum-Gum Fruit" },
+    { text: "Bleach-da Yoruichi kim?", options: ["Hollow", "Quincy", "Shinigami", "Human"], answer: "Shinigami" },
+    { text: "Attack on Titan-da Historia qahramoni kim?", options: ["Mikasa", "Sasha", "Historia Reiss", "Hange"], answer: "Historia Reiss" }
 ];
-while(allQuestions.length<100){
-allQuestions=[...allQuestions,...allQuestions]
+
+let quizQuestions = [];
+let currentIndex = 0;
+let score = 0;
+
+function initAndStart() {
+    // Audio tizimini uyg'otish
+    if(!audioCtx) audioCtx = new AudioContext();
+    audioCtx.resume();
+
+    // Fon musiqasini qo'yish
+    const bg = document.getElementById("bgMusic");
+    bg.volume = 0.2;
+    bg.play().catch(e => console.log("Fon musiqasi kutilmoqda..."));
+
+    startQuiz();
 }
 
-allQuestions=allQuestions.slice(0,100)
+function startQuiz() {
+    document.getElementById("startBtn").style.display = "none";
+    document.getElementById("quizArea").style.display = "block";
+    
+    quizQuestions = [];
+    currentIndex = 0;
+    score = 0;
 
-let quizQuestions=[]
-let currentIndex=0
-let score=0
+    let copy = [...allQuestions];
+    for(let i=0; i<10; i++) {
+        let index = Math.floor(Math.random() * copy.length);
+        quizQuestions.push(copy[index]);
+        copy.splice(index, 1);
+    }
 
-function startQuiz(){
-
-let music=document.getElementById("bgMusic")
-music.volume=0.3
-music.play().catch(()=>{})
-
-quizQuestions=[]
-currentIndex=0
-score=0
-
-let copy=[...allQuestions]
-
-for(let i=0;i<10;i++){
-
-let index=Math.floor(Math.random()*copy.length)
-
-quizQuestions.push(copy[index])
-
-copy.splice(index,1)
-
+    showQuestion();
 }
 
-document.getElementById("quizArea").style.display="block"
+function showQuestion() {
+    if(currentIndex >= quizQuestions.length) {
+        document.getElementById("bgMusic").pause();
+        playFinishSound();
+        document.getElementById("question").innerText = "Quiz tugadi!";
+        document.getElementById("options").innerHTML = `<h3>Sizning natijangiz: ${score}/10</h3><button id="startBtn" onclick="location.reload()">Qaytadan boshlash</button>`;
+        document.getElementById("score").innerText = "";
+        return;
+    }
 
-showQuestion()
+    let q = quizQuestions[currentIndex];
+    document.getElementById("question").innerText = q.text;
+    let optionsDiv = document.getElementById("options");
+    optionsDiv.innerHTML = "";
 
+    q.options.forEach(opt => {
+        let btn = document.createElement("button");
+        btn.className = "option";
+        btn.innerText = opt;
+        btn.onclick = () => checkAnswer(btn, opt);
+        optionsDiv.appendChild(btn);
+    });
+
+    document.getElementById("score").innerText = `Savol: ${currentIndex + 1}/10 | Ball: ${score}`;
 }
 
-function showQuestion(){
+function checkAnswer(button, selected) {
+    let correct = quizQuestions[currentIndex].answer;
+    let buttons = document.querySelectorAll(".option");
 
-if(currentIndex>=quizQuestions.length){
+    buttons.forEach(b => b.disabled = true);
 
-document.getElementById("finishSound").play()
+    if(selected === correct) {
+        button.classList.add("correct");
+        score++;
+        playCorrectSound(); // Sintezator ovozi
+    } else {
+        button.classList.add("wrong");
+        playWrongSound(); // Sintezator ovozi
+        
+        buttons.forEach(b => {
+            if(b.innerText === correct) b.classList.add("correct");
+        });
+    }
 
-document.getElementById("question").innerText="Quiz tugadi! Ballingiz: "+score+"/10"
-
-document.getElementById("options").innerHTML='<button onclick="startQuiz()">Yangi Quiz</button>'
-
-document.getElementById("score").innerText=""
-
-return
+    setTimeout(() => {
+        currentIndex++;
+        showQuestion();
+    }, 1500);
 }
-
-let q=quizQuestions[currentIndex]
-
-document.getElementById("question").innerText=q.text
-
-let optionsDiv=document.getElementById("options")
-
-optionsDiv.innerHTML=""
-
-q.options.forEach(opt=>{
-
-let btn=document.createElement("button")
-
-btn.className="option"
-
-btn.innerText=opt
-
-btn.onclick=()=>checkAnswer(btn,opt)
-
-optionsDiv.appendChild(btn)
-
-})
-
-document.getElementById("score").innerText="Savol "+(currentIndex+1)+"/10 | Ball "+score
-
-}
-
-function checkAnswer(button,selected){
-
-let correct=quizQuestions[currentIndex].answer
-
-let buttons=document.querySelectorAll(".option")
-
-buttons.forEach(b=>b.disabled=true)
-
-if(selected===correct){
-
-button.classList.add("correct")
-score++
-
-document.getElementById("correctSound").play()
-
-}else{
-
-button.classList.add("wrong")
-
-document.getElementById("wrongSound").play()
-
-buttons.forEach(b=>{
-if(b.innerText===correct){
-b.classList.add("correct")
-}
-})
-
-}
-
-setTimeout(()=>{
-currentIndex++
-showQuestion()
-},1000)
-
-}
-
 </script>
 
 </body>
 </html>
-```
